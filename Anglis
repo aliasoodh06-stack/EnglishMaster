@@ -1,0 +1,213 @@
+
+name: Build English Master APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Create Android project
+        run: |
+          mkdir -p app/src/main/java/com/englishmaster/app
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "EnglishMaster"
+          include ':app'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.englishmaster.app'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.englishmaster.app'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar"
+                  android:label="English Master"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/englishmaster/app/MainActivity.java <<'EOF'
+          package com.englishmaster.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.graphics.Color;
+          import android.view.Gravity;
+          import android.widget.*;
+
+          public class MainActivity extends Activity {
+              LinearLayout page;
+              int blue = Color.rgb(35, 83, 170);
+
+              public void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  home();
+              }
+
+              TextView text(String s, int size) {
+                  TextView t = new TextView(this);
+                  t.setText(s);
+                  t.setTextSize(size);
+                  t.setTextColor(Color.rgb(30, 40, 60));
+                  t.setPadding(12, 12, 12, 12);
+                  return t;
+              }
+
+              void start(String title) {
+                  ScrollView scroll = new ScrollView(this);
+                  page = new LinearLayout(this);
+                  page.setOrientation(1);
+                  page.setPadding(20, 24, 20, 24);
+                  page.setBackgroundColor(Color.rgb(245, 248, 255));
+                  scroll.addView(page);
+                  setContentView(scroll);
+                  TextView heading = text(title, 26);
+                  heading.setTextColor(blue);
+                  heading.setGravity(Gravity.CENTER);
+                  page.addView(heading);
+              }
+
+              void btn(String label, Runnable action) {
+                  Button b = new Button(this);
+                  b.setText(label);
+                  b.setTextSize(17);
+                  b.setOnClickListener(v -> action.run());
+                  page.addView(b);
+              }
+
+              void home() {
+                  start("English Master");
+                  page.addView(text("آموزش انگلیسی از صفر", 21));
+                  page.addView(text("درس‌ها را انتخاب کن و قدم‌به‌قدم یاد بگیر.", 17));
+                  btn("لغات پایه", () -> words());
+                  btn("گرامر: فعل to be", () -> grammar());
+                  btn("مکالمه ساده", () -> dialogue());
+                  btn("تمرین و آزمون", () -> quiz());
+              }
+
+              void words() {
+                  start("لغات پایه");
+                  String[] w = {
+                      "Hello = سلام",
+                      "Goodbye = خداحافظ",
+                      "Thank you = متشکرم",
+                      "Please = لطفاً",
+                      "Book = کتاب",
+                      "Water = آب",
+                      "Friend = دوست",
+                      "School = مدرسه",
+                      "Good = خوب",
+                      "Name = نام"
+                  };
+                  for (String s : w) page.addView(text(s, 20));
+                  btn("بازگشت", () -> home());
+              }
+
+              void grammar() {
+                  start("گرامر: to be");
+                  page.addView(text("I am = من هستم", 20));
+                  page.addView(text("You are = تو هستی", 20));
+                  page.addView(text("He is = او هست", 20));
+                  page.addView(text("She is = او هست", 20));
+                  page.addView(text("We are = ما هستیم", 20));
+                  page.addView(text("They are = آن‌ها هستند", 20));
+                  page.addView(text("مثال: I am a student. = من دانش‌آموز هستم.", 18));
+                  btn("بازگشت", () -> home());
+              }
+
+              void dialogue() {
+                  start("مکالمه ساده");
+                  page.addView(text("A: Hello! = سلام!", 20));
+                  page.addView(text("B: Hi! = سلام!", 20));
+                  page.addView(text("A: What is your name? = اسمت چیست؟", 20));
+                  page.addView(text("B: My name is Ali. = اسم من علی است.", 20));
+                  page.addView(text("A: Nice to meet you. = از آشنایی با تو خوشحالم.", 20));
+                  btn("بازگشت", () -> home());
+              }
+
+              void quiz() {
+                  start("آزمون کوتاه");
+                  page.addView(text("معنی کلمه Book چیست؟", 21));
+                  btn("آب", () -> answer(false));
+                  btn("کتاب", () -> answer(true));
+                  btn("مدرسه", () -> answer(false));
+              }
+
+              void answer(boolean correct) {
+                  start("نتیجه آزمون");
+                  page.addView(text(correct ? "آفرین! پاسخ درست است." : "اشکالی ندارد! دوباره تمرین کن.", 22));
+                  btn("بازگشت به خانه", () -> home());
+              }
+          }
+          EOF
+
+      - name: Build APK
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnglishMaster-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
